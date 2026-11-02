@@ -126,6 +126,7 @@ input[type="text"] {
 .back { display: flex; flex-direction: column; gap: 10px; border-top: 1px dashed var(--rule); padding-top: 14px; }
 .empty { color: var(--muted); text-align: center; margin: auto 0; }
 footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.copy { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
 .link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
 @media (max-width: 420px) { h1 { font-size: 28px; } .term { font-size: 28px; } .progress { grid-template-columns: repeat(2, 1fr); row-gap: 10px; } }
 @media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
@@ -162,6 +163,7 @@ footer { display: flex; justify-content: space-between; align-items: center; gap
     <span id="foot"></span>
     <button class="link" id="reset">Wyzeruj postęp</button>
   </footer>
+  <p class="copy">© 2026 Marcin Wyrzykowski. Wszelkie prawa zastrzeżone.</p>
 </div>
 
 <script>
