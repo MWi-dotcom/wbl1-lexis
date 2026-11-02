@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="author" content="Marcin Wyrzykowski">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231f5fbf%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3EL%3C/text%3E%3C/svg%3E">
+<title>Lexis from the Whiteboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one narrow column like a strip of whiteboard; marker colours code word classes */
+:root {
+  --board: #f4f7f8;
+  --surface: #ffffff;
+  --ink: #1c2830;
+  --muted: #5d6e78;
+  --rule: #d6dfe3;
+  --adj: #1f5fbf;
+  --noun: #1d7a4a;
+  --verb: #c3352b;
+  --phr: #6a3d9e;
+  --ok: #1d7a4a;
+  --bad: #c3352b;
+  --font-hand: "Kalam", "Comic Sans MS", cursive;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --board: #141b1f; --surface: #1c252b; --ink: #e5ecef; --muted: #93a4ad; --rule: #2e3a41;
+    --adj: #6fa3f0; --noun: #5cc48d; --verb: #f0776b; --phr: #b493e6; --ok: #5cc48d; --bad: #f0776b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --board: #141b1f; --surface: #1c252b; --ink: #e5ecef; --muted: #93a4ad; --rule: #2e3a41;
+  --adj: #6fa3f0; --noun: #5cc48d; --verb: #f0776b; --phr: #b493e6; --ok: #5cc48d; --bad: #f0776b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body {
+  margin: 0;
+  background: var(--board); color: var(--ink);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-hand); font-weight: 700; font-size: 34px; line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 span { color: var(--adj); }
+
+.progress { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pcell { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.pcell b { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 700; }
+.bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .3s; }
+
+.tabs { display: flex; border-bottom: 2px solid var(--rule); gap: 4px; }
+.tab {
+  flex: 1; font: 700 15px var(--font-body); color: var(--muted); background: none; border: 0;
+  padding: 10px 4px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 700 13px var(--font-body); padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--rule); background: var(--surface); color: var(--muted);
+}
+.chip[aria-pressed="true"] { border-color: currentColor; }
+.chip[data-c="all"][aria-pressed="true"] { color: var(--ink); }
+.chip[data-c="adj"][aria-pressed="true"] { color: var(--adj); }
+.chip[data-c="noun"][aria-pressed="true"] { color: var(--noun); }
+.chip[data-c="verb"][aria-pressed="true"] { color: var(--verb); }
+.chip[data-c="phr"][aria-pressed="true"] { color: var(--phr); }
+.chip[data-c="review"][aria-pressed="true"] { color: var(--bad); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 22px 20px; display: flex; flex-direction: column; gap: 14px; min-height: 260px;
+}
+.meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+.tag.adj { color: var(--adj); } .tag.noun { color: var(--noun); } .tag.verb { color: var(--verb); } .tag.phr { color: var(--phr); }
+.term { font-family: var(--font-hand); font-weight: 700; font-size: 34px; line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+.term.adj { color: var(--adj); } .term.noun { color: var(--noun); } .term.verb { color: var(--verb); } .term.phr { color: var(--phr); }
+.pl { font-size: 20px; font-weight: 700; margin: 0; }
+.def { color: var(--muted); margin: 0; }
+.ex { margin: 0; font-style: italic; border-left: 3px solid var(--rule); padding-left: 12px; }
+.note { font-size: 14px; color: var(--muted); margin: 0; }
+.hint { color: var(--muted); font-size: 14px; margin: 0; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  flex: 1; min-width: 120px; font: 700 15px var(--font-body); padding: 12px 14px; border-radius: 8px;
+  border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn.ok { border-color: var(--ok); color: var(--ok); }
+.btn.bad { border-color: var(--bad); color: var(--bad); }
+.btn:focus-visible, .chip:focus-visible, .tab:focus-visible, .opt:focus-visible, input:focus-visible { outline: 3px solid var(--adj); outline-offset: 2px; }
+
+.opts { display: grid; gap: 8px; }
+.opt {
+  text-align: left; font: 400 17px var(--font-body); padding: 12px 14px; border-radius: 8px; cursor: pointer;
+  border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink);
+}
+.opt.right { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.opt.wrong { border-color: var(--bad); color: var(--bad); text-decoration: line-through; }
+.opt:disabled { cursor: default; }
+
+.gap-sent { font-size: 19px; margin: 0; }
+.gap-sent mark { background: none; color: var(--ink); border-bottom: 2px solid var(--muted); padding: 0 1.5em; }
+input[type="text"] {
+  width: 100%; font: 400 18px var(--font-body); padding: 12px 14px; border-radius: 8px;
+  border: 1.5px solid var(--rule); background: var(--board); color: var(--ink);
+}
+.fb { font-weight: 700; margin: 0; }
+.fb.ok { color: var(--ok); } .fb.bad { color: var(--bad); }
+.score { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.flipzone { cursor: pointer; display: flex; flex-direction: column; gap: 14px; }
+.back { display: flex; flex-direction: column; gap: 10px; border-top: 1px dashed var(--rule); padding-top: 14px; }
+.empty { color: var(--muted); text-align: center; margin: auto 0; }
+footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+@media (max-width: 420px) { h1 { font-size: 28px; } .term { font-size: 28px; } }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">WbL1 · September &amp; October</div>
+    <h1>Lexis from the <span>whiteboard</span></h1>
+  </header>
+
+  <div class="progress" id="progress" aria-label="Postęp"></div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-cards" data-mode="cards" aria-selected="true">Fiszki</button>
+    <button class="tab" role="tab" id="tab-quiz" data-mode="quiz" aria-selected="false">Quiz</button>
+    <button class="tab" role="tab" id="tab-gap" data-mode="gap" aria-selected="false">Luki</button>
+  </div>
+
+  <div class="chips" id="chips">
+    <button class="chip" id="c-all" data-c="all" aria-pressed="true">Wszystko</button>
+    <button class="chip" id="c-adj" data-c="adj" aria-pressed="false">Adj/Adv</button>
+    <button class="chip" id="c-noun" data-c="noun" aria-pressed="false">Nouns</button>
+    <button class="chip" id="c-verb" data-c="verb" aria-pressed="false">Verbs</button>
+    <button class="chip" id="c-phr" data-c="phr" aria-pressed="false">Phrases</button>
+    <button class="chip" id="c-review" data-c="review" aria-pressed="false">Do powtórki</button>
+  </div>
+
+  <section class="card" id="stage" aria-live="polite"></section>
+
+  <footer>
+    <span id="foot"></span>
+    <button class="link" id="reset">Wyzeruj postęp</button>
+  </footer>
+</div>
+
+<script>
+const W = [
+// [id, cat, term, pl, en definition, example with ___, answer, note]
+["self-reliant","adj","self-reliant","samodzielny, polegający na sobie","able to manage without help from others","She's very ___ and rarely asks anyone for help.","self-reliant"],
+["praise-worthy","adj","praise-worthy","godny pochwały","deserving praise","Their effort to clean up the beach was truly ___.","praise-worthy"],
+["demanding","adj","demanding (task)","wymagający (zadanie)","needing a lot of time, effort or skill","Running a marathon is a physically ___ task.","demanding"],
+["cramped","adj","cramped","ciasny, stłoczony","small, with not enough room","We lived in a ___ flat with no space for guests.","cramped"],
+["obscure","adj","obscure","mało znany; niejasny","not well known, or hard to understand","The quote comes from an ___ 18th-century poet.","obscure"],
+["eventually","adj","eventually","ostatecznie, w końcu","in the end, after a long time","After two hours of waiting, the train ___ arrived.","eventually","Nie: „ewentualnie” (= possibly)."],
+["possibly","adj","possibly","być może; ewentualnie","perhaps; also used in polite requests","Could you ___ lend me your charger?","possibly"],
+["current","adj","current","obecny, bieżący, aktualny","happening or existing now","What is your ___ address?","current","„aktualny” = current, nie actual."],
+["actual","adj","actual","rzeczywisty, faktyczny","real, true (not estimated)","The ___ cost was twice the estimate.","actual","False friend: actual ≠ aktualny."],
+["grumpy","adj","grumpy (person)","zrzędliwy, marudny","bad-tempered, easily annoyed","He's always ___ before his first coffee.","grumpy"],
+["bumpy","adj","bumpy (flight, road)","wyboisty; z turbulencjami","uneven; with sudden movements","It was a ___ flight because of the storm.","bumpy"],
+["vague","adj","vague (explanation, memories)","niejasny, mglisty","not clear or detailed","I have only ___ memories of my first school.","vague"],
+["chilly","adj","chilly (morning)","chłodny, rześki","unpleasantly cold","It was a ___ morning, so I took a scarf.","chilly"],
+["neither","adj","neither (vs none)","żaden z dwóch","not one or the other of two","I have two brothers, but ___ of them lives nearby.","neither","Neither = z dwóch, none = z trzech lub więcej."],
+["none","adj","none (vs neither)","żaden (z wielu)","not one of three or more","I invited ten friends, but ___ of them came.","none","None = z 3+, neither = z dwóch."],
+["noticeable","adj","noticeable","zauważalny, wyraźny","easy to see or notice","There's been a ___ improvement in your English.","noticeable"],
+["immense","adj","immense (problems)","ogromny","extremely large","The country faces ___ problems after the flood.","immense"],
+
+["debris","noun","debris (rubble)","gruz, szczątki","broken pieces left after something is destroyed","Rescuers searched through the ___ after the earthquake.","debris"],
+["adolescents","noun","adolescents","nastolatki, młodzież","young people developing into adults","The programme is designed for ___ aged 13 to 17.","adolescents"],
+["makeshift","noun","makeshift (temporary arrangement)","prowizoryczny; prowizorka","temporary, used because nothing better is available","They slept in a ___ shelter made of branches.","makeshift"],
+["request","noun","request","prośba","an act of asking politely for something","The hotel staff were happy to fulfil every ___.","request"],
+["treadmill","noun","treadmill","bieżnia (mechaniczna)","an exercise machine you walk or run on","I run on the ___ when it's raining.","treadmill"],
+["bouncer","noun","bouncer","bramkarz (w klubie)","a person who controls who enters a club","The ___ didn't let us into the club.","bouncer"],
+["weightlessness","noun","weightlessness","nieważkość","the state of having no weight, e.g. in space","Astronauts train for ___ in special aircraft.","weightlessness"],
+["density","noun","density","gęstość","how crowded or compact something is","Tokyo has a very high population ___.","density"],
+["receipt","noun","receipt","paragon, pokwitowanie","a paper proving you paid","Keep the ___ in case you want to return it.","receipt","Wymowa: /rɪˈsiːt/, „p” nieme."],
+["prescription","noun","prescription","recepta (lekarska)","a doctor's written order for medicine","You can't buy these pills without a ___.","prescription"],
+["recipe","noun","recipe","przepis kulinarny","instructions for cooking a dish","This is my grandma's ___ for apple pie.","recipe","Recepta to prescription, nie recipe."],
+["pension","noun","pension","emerytura","money paid regularly after you retire","He lives on a small state ___.","pension"],
+["emergencies","noun","emergencies","nagłe wypadki","sudden dangerous situations needing quick action","Only use this number in ___.","emergencies"],
+["game-changer","noun","a game-changer","coś przełomowego","something that completely changes a situation","Smartphones were a real ___ for photography.","game-changer"],
+["steep","noun","steep (river banks)","stromy","rising or falling sharply","The river banks were too ___ to climb.","steep"],
+["cereals","noun","cereals","płatki śniadaniowe; zboża","breakfast food made from grain","The kids eat ___ with milk every morning.","cereals"],
+
+["fob-off","verb","fob sb off","zbyć kogoś (byle czym)","to get rid of sb with an excuse or poor answer","The manager tried to ___ me off with a vague promise.","fob"],
+["chinwag","verb","chinwag (chatter)","pogaduszki; plotkować","an informal friendly chat","We had a good ___ over coffee.","chinwag"],
+["divert","verb","divert","przekierować","to change the direction of something","Police had to ___ the traffic away from the accident.","divert"],
+["bounce","verb","bounce","odbijać (się)","to spring back after hitting a surface","Watch the ball ___ off the wall.","bounce"],
+["doze-off","verb","doze off","przysnąć, zdrzemnąć się","to fall asleep without meaning to","I always ___ off in front of the TV.","doze"],
+["attend","verb","attend (to sth)","zająć się czymś","to deal with or take care of sth","A nurse will ___ to you shortly.","attend"],
+["jammed","verb","be jammed (phones)","być zablokowanym, przeciążonym","to be too busy to work properly","The phone lines were ___ after the announcement.","jammed"],
+["succumb","verb","succumb (give in) to sth","ulec czemuś","to stop resisting","She finally ___ to temptation and ate the cake.","succumbed"],
+["take-apart","verb","they took it apart","rozebrać na części","to separate sth into pieces","They ___ the engine apart to find the fault.","took"],
+["deteriorate","verb","deteriorate (worsen)","pogarszać się","to become worse","His health began to ___ during the winter.","deteriorate"],
+["remind","verb","it reminds me of (sth)","to mi przypomina (coś)","to make sb think of sth","This song ___ me of our holidays in Greece.","reminds"],
+["get-diverted","verb","get diverted","zostać przekierowanym","to be sent another way","Our flight got ___ to Gdańsk because of fog.","diverted"],
+
+["ball-rolling","phr","start the ball rolling","rozpocząć coś, rozkręcić","to start an activity","Let me start the ___ rolling by introducing myself.","ball"],
+["rocket","phr","it's not rocket science","to nie fizyka kwantowa","it's not difficult","Just follow the instructions, it's not ___ science.","rocket"],
+["head-off","phr","laugh one's head off","śmiać się do rozpuku","to laugh very much","We laughed our ___ off at his jokes.","heads"],
+["strike-up","phr","strike up a conversation","nawiązać rozmowę","to start talking to sb","I ___ up a conversation with the man next to me.","struck"],
+["regular-basis","phr","keep in touch on a regular basis","regularnie utrzymywać kontakt","to stay in contact often","We still keep in touch on a regular ___.","basis"],
+["blue-moon","phr","once in a blue moon","raz na ruski rok","very rarely","I only eat fast food once in a blue ___.","moon"],
+["bulls-eye","phr","bull's eye","strzał w dziesiątkę","exactly right; the centre of a target","Your guess was a real ___ eye!","bull's"],
+["vicious","phr","a vicious circle","błędne koło","a bad situation that keeps causing itself","Stress causes insomnia, which causes more stress. It's a ___ circle.","vicious"],
+["blue-face","phr","talk until you're blue in the face","mówić do znudzenia (bez skutku)","to keep talking with no result","You can talk until you're ___ in the face, he won't change his mind.","blue"],
+["eager-beaver","phr","an eager beaver","zapaleniec, gorliwiec","a very enthusiastic, hard-working person","The new intern is a real eager ___.","beaver"],
+["delight","phr","much to her/his delight","ku jej/jego radości","making her/him very happy","Much to her ___, she won first prize.","delight"],
+["cherish","phr","cherish the memory (of sth)","pielęgnować wspomnienie","to keep a memory dear","I will always ___ the memory of that summer.","cherish"],
+["struck-upon","phr","I struck upon the/an idea","wpadłem/wpadłam na pomysł","to suddenly think of an idea","I struck ___ an idea while I was in the shower.","upon"],
+["by-and-large","phr","by and large","ogólnie rzecz biorąc","generally speaking","By and ___, the trip was a success.","large"],
+["whale","phr","we had a whale of a time","świetnie się bawiliśmy","to enjoy oneself very much","We had a ___ of a time at the wedding.","whale"],
+["spoilt","phr","you're spoilt for choice","masz ogromny wybór","to have too many good options","In this market you're spoilt for ___.","choice"],
+["bullet","phr","I took the bullet","wziąłem/wzięłam to na siebie","to accept blame or a bad thing for others","When the project failed, I took the ___ for the team.","bullet"]
+].map(r => ({id:r[0],cat:r[1],term:r[2],pl:r[3],def:r[4],ex:r[5],ans:r[6],note:r[7]||""}));
+
+const CATS = {adj:"Adj/Adv", noun:"Noun", verb:"Verb", phr:"Phrase"};
+const KEY = "wbl1-lexis-v1";
+let st = {known:{}, miss:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.known) st = s; } catch(e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(e) {} };
+
+let mode = "cards", filter = "all", deck = [], idx = 0, score = {ok:0, all:0}, flipped = false, answered = false;
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const norm = s => s.toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, " ").trim();
+
+function pool() {
+  if (filter === "all") return W;
+  if (filter === "review") return W.filter(w => (st.miss[w.id] || 0) > 0 && !st.known[w.id]);
+  return W.filter(w => w.cat === filter);
+}
+function newDeck() { deck = shuffle(pool()); idx = 0; score = {ok:0, all:0}; flipped = false; answered = false; render(); }
+
+function mark(w, good) {
+  if (good) { st.known[w.id] = true; } else { st.known[w.id] = false; st.miss[w.id] = (st.miss[w.id] || 0) + 1; }
+  save(); drawProgress();
+}
+
+function drawProgress() {
+  $("#progress").innerHTML = Object.keys(CATS).map(c => {
+    const all = W.filter(w => w.cat === c), k = all.filter(w => st.known[w.id]).length;
+    return `<div class="pcell"><span>${CATS[c]} <b>${k}/${all.length}</b></span><div class="bar"><i style="width:${k / all.length * 100}%;background:var(--${c})"></i></div></div>`;
+  }).join("");
+  const rv = W.filter(w => (st.miss[w.id] || 0) > 0 && !st.known[w.id]).length;
+  $("#c-review").textContent = `Do powtórki (${rv})`;
+  $("#foot").textContent = `Opanowane: ${W.filter(w => st.known[w.id]).length} z ${W.length}`;
+}
+
+function head(w) {
+  return `<div class="meta"><span class="tag ${w.cat}">${CATS[w.cat]}</span><span>${idx + 1} / ${deck.length}${mode !== "cards" ? ` · wynik ${score.ok}/${score.all}` : ""}</span></div>`;
+}
+function backInfo(w) {
+  return `<p class="pl">${esc(w.pl)}</p><p class="def">${esc(w.def)}</p><p class="ex">${esc(w.ex.replace("___", w.ans))}</p>${w.note ? `<p class="note">${esc(w.note)}</p>` : ""}`;
+}
+
+function render() {
+  const s = $("#stage");
+  if (!deck.length) {
+    s.innerHTML = `<p class="empty">${filter === "review" ? "Brak słówek do powtórki. Błędne odpowiedzi trafią tutaj." : "Brak słówek."}</p>`;
+    return;
+  }
+  if (idx >= deck.length) {
+    s.innerHTML = `<p class="term phr" style="color:var(--ink)">Koniec talii</p>
+      ${mode !== "cards" ? `<p class="pl">Wynik: ${score.ok} / ${score.all}</p>` : ""}
+      <p class="def">Przejrzano ${deck.length} wyrażeń.</p>
+      <div class="row"><button class="btn primary" id="again">Jeszcze raz (przetasuj)</button></div>`;
+    $("#again").onclick = newDeck;
+    return;
+  }
+  const w = deck[idx];
+  if (mode === "cards") {
+    s.innerHTML = `${head(w)}
+      <div class="flipzone" id="flip" role="button" tabindex="0" aria-label="Odwróć fiszkę">
+        <p class="term ${w.cat}">${esc(w.term)}</p>
+        ${flipped ? `<div class="back">${backInfo(w)}</div>` : `<p class="hint">Dotknij, aby zobaczyć znaczenie</p>`}
+      </div>
+      <div class="row">${flipped
+        ? `<button class="btn bad" id="no">Jeszcze nie</button><button class="btn ok" id="yes">Znam</button>`
+        : `<button class="btn primary" id="show">Pokaż</button>`}</div>`;
+    const flip = () => { flipped = true; render(); };
+    $("#flip").onclick = flip;
+    $("#flip").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+    if (flipped) {
+      $("#yes").onclick = () => { mark(w, true); idx++; flipped = false; render(); };
+      $("#no").onclick = () => { mark(w, false); idx++; flipped = false; render(); };
+    } else $("#show").onclick = flip;
+  }
+  else if (mode === "quiz") {
+    if (!w._opts || w._deckId !== deck) {
+      const same = shuffle(W.filter(x => x.cat === w.cat && x.id !== w.id));
+      const other = shuffle(W.filter(x => x.cat !== w.cat));
+      w._opts = shuffle([w, ...same.concat(other).slice(0, 3)]); w._deckId = deck;
+    }
+    s.innerHTML = `${head(w)}
+      <p class="hint">Które wyrażenie znaczy:</p>
+      <p class="pl">${esc(w.pl)}</p>
+      <p class="def">${esc(w.def)}</p>
+      <div class="opts">${w._opts.map((o, i) => `<button class="opt" id="opt-${i}" data-id="${o.id}">${esc(o.term)}</button>`).join("")}</div>
+      <div id="after"></div>`;
+    s.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+      if (answered) return; answered = true;
+      const good = b.dataset.id === w.id;
+      score.all++; if (good) score.ok++;
+      mark(w, good);
+      s.querySelectorAll(".opt").forEach(o => { o.disabled = true; if (o.dataset.id === w.id) o.classList.add("right"); });
+      if (!good) b.classList.add("wrong");
+      $("#after").innerHTML = `<p class="ex">${esc(w.ex.replace("___", w.ans))}</p><div class="row" style="margin-top:12px"><button class="btn primary" id="next">Dalej</button></div>`;
+      s.querySelector(".meta span:last-child").textContent = `${idx + 1} / ${deck.length} · wynik ${score.ok}/${score.all}`;
+      $("#next").onclick = () => { idx++; answered = false; render(); };
+      $("#next").focus();
+    });
+  }
+  else {
+    const parts = w.ex.split("___");
+    s.innerHTML = `${head(w)}
+      <p class="gap-sent">${esc(parts[0])}<mark aria-label="luka"></mark>${esc(parts[1] || "")}</p>
+      <p class="hint">${esc(w.pl)}</p>
+      <form id="gf" class="row" autocomplete="off">
+        <input type="text" id="gap-input" placeholder="Wpisz brakujące słowo" autocapitalize="off" spellcheck="false" aria-label="Brakujące słowo">
+        <button class="btn" type="button" id="hintbtn">Podpowiedź</button>
+        <button class="btn primary" type="submit" id="check">Sprawdź</button>
+      </form>
+      <div id="after"></div>`;
+    const inp = $("#gap-input");
+    inp.focus({preventScroll: true});
+    $("#hintbtn").onclick = () => { const a = w.ans; inp.placeholder = a[0] + "…" + ` (${a.length} liter)`; inp.focus(); };
+    $("#gf").onsubmit = e => {
+      e.preventDefault();
+      if (answered) { idx++; answered = false; render(); return; }
+      if (!inp.value.trim()) return;
+      answered = true;
+      const good = norm(inp.value) === norm(w.ans) || norm(inp.value) === norm(w.ans).replace("'", "");
+      score.all++; if (good) score.ok++;
+      mark(w, good);
+      inp.readOnly = true;
+      $("#hintbtn").hidden = true;
+      $("#check").textContent = "Dalej";
+      $("#after").innerHTML = `<p class="fb ${good ? "ok" : "bad"}">${good ? "Dobrze!" : `Poprawnie: ${esc(w.ans)}`}</p><div class="back">${backInfo(w)}</div>`;
+      s.querySelector(".meta span:last-child").textContent = `${idx + 1} / ${deck.length} · wynik ${score.ok}/${score.all}`;
+      $("#check").focus();
+    };
+  }
+}
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  mode = t.dataset.mode;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  newDeck();
+});
+document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+  filter = c.dataset.c;
+  document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === c));
+  newDeck();
+});
+let confirmReset = false;
+$("#reset").onclick = () => {
+  if (!confirmReset) { confirmReset = true; $("#reset").textContent = "Na pewno? Kliknij ponownie"; setTimeout(() => { confirmReset = false; $("#reset").textContent = "Wyzeruj postęp"; }, 3000); return; }
+  st = {known:{}, miss:{}}; save(); confirmReset = false; $("#reset").textContent = "Wyzeruj postęp"; drawProgress(); newDeck();
+};
+
+drawProgress();
+newDeck();
+</script>
+
+</body>
+</html>
